@@ -1,176 +1,119 @@
-## ![OpenRGB](Documentation/Images/OpenRGB.png "OpenRGB Logo")
+# OpenRGB with Redragon K617 Fizz ABNT support
 
-![Pipeline Status](https://gitlab.com/CalcProgrammer1/OpenRGB/badges/master/pipeline.svg)
+An unofficial personal fork of [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) with Static and per-key RGB support for the **Redragon K617 Fizz, 63-key ABNT layout**.
 
-One of the biggest complaints about RGB is the software ecosystem surrounding it.  Every manufacturer has their own app, their own brand, their own style.  If you want to mix and match devices, you end up with a ton of conflicting, functionally identical apps competing for your background resources.  On top of that, these apps are proprietary and Windows-only.  Some even require online accounts.  What if there was a way to control all of your RGB devices from a single app, on Windows, Linux, and MacOS, without any nonsense?  That is what OpenRGB sets out to achieve.  One app to rule them all.
+Modified on **2026-10-05** by Pedro Antonio. Based on upstream commit `b9783787b60c444f9558d1fef4c276af6555ee49`. This fork is not an official OpenRGB release or a Redragon product. The original project introduction and notices are preserved in [README.upstream.md](README.upstream.md).
 
-## Features
+## What works
 
-* Set colors and select effect modes for a wide variety of RGB hardware
-* Save and load profiles
-* Control lighting from third party software using the OpenRGB SDK
-* Command line interface
-* Connect multiple instances of OpenRGB to synchronize lighting across multiple PCs
-* Can operate standalone or in a client/headless server configuration
-* View device information
-* No official/manufacturer software required
-* Graphical view of device LEDs makes creating custom patterns easy
+- **Static:** one color across the whole keyboard.
+- **Custom:** independent colors for all 63 ABNT keys.
+- A keyboard matrix for OpenRGB's visual LED selection, including the extra `\|` and `/?` keys and vertically aligned `[` and `]` keys.
+- Existing OpenRGB profile and command-line functionality.
 
-![OpenRGB_Device_View](Documentation/Images/OpenRGB_Screenshot.png "OpenRGB Device View Screenshot")
+The owner verified detection, Static RGB, Custom RGB, several individual keys, and the corrected ABNT mappings on Linux. Offline tests also compare generated reports against captured OEM reports and exercise failed-transfer handling. This is not an exhaustive test of every key, platform or hardware revision.
 
-## Website
+## Supported keyboard revision
 
-* Check out our website at [openrgb.org](https://openrgb.org)
+| Property | Captured value |
+|---|---|
+| USB VID:PID | `258a:0049` |
+| Manufacturer / product | `BY Tech` / `Gaming Keyboard` |
+| USB device release | `1.01` |
+| HID interface | `1` |
+| Vendor usage page / usage | `FF00` / `01` |
+| Layout | ABNT, 63 keys |
 
-## Supported Devices
+Detection also requires an exact match to the captured 227-byte HID report descriptor. The USB release is not an established firmware version. VID/PID and descriptor matching do not prove that another keyboard is compatible: these IDs are shared by other devices. The detector therefore remains **disabled by default**. The existing disabled Sinowealth detector has not been re-enabled.
 
-* See the [Supported Devices](https://openrgb.org/devices.html) page for the current list of supported devices.
+The ANSI variant and Windows/macOS behavior have not been tested. This fork currently uses the ABNT layout and does not automatically select a regional layout.
 
-## WARNING!
+## Build on Linux
 
-This project interacts directly with hardware using reverse engineered protocols.  While we do our best to make sure we're sending the right data, there is always some risk in sending data to hardware when we don't understand exactly how that hardware works.  There have been issues in the past with certain hardware getting damaged/bricked and we have either disabled or fixed the offending code.  That said, with OpenRGB always changing and the landscape of RGB devices being of widely varying quality, we can't guarantee it won't happen again.  By installing and using OpenRGB you accept this risk.
+Install the dependencies described in [OpenRGB's compilation guide](Documentation/Compiling.md). The tested build uses Qt 5, HIDAPI's hidraw backend, libusb and mbedTLS 3.
 
-## Download OpenRGB
+From the repository root:
 
-  * Pre-built binaries are available for the following platforms:
-    * Windows
-    * Linux (AppImage, .deb, and .rpm)
-    * MacOS
-  * Released versions are available to download on [OpenRGB.org](https://openrgb.org/releases.html) or under [Releases](https://gitlab.com/CalcProgrammer1/OpenRGB/-/releases/permalink/latest).
-  * Experimental (aka Pipeline) versions are available to download on [OpenRGB.org](https://openrgb.org/index.html#pl).
-  * On Windows, you will need the **Microsoft Visual 2019 C++ runtime** installed.  You can get it [here](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-supported-redistributable-version).
-  * An official Flatpak release is [available on Flathub](https://flathub.org/apps/details/org.openrgb.OpenRGB)
-    * Note: If using the AppImage or Flatpak versions, ensure you [install the latest udev rules](Documentation/UdevRules.md).
-  * Released versions are officially packaged for various distributions including Alpine, Fedora, and Arch.
-  * Arch users can also install from the [Extra repository](https://archlinux.org/packages/extra/x86_64/openrgb/) or from the AUR for the [pipeline](https://aur.archlinux.org/packages/openrgb-git/) version.
+```sh
+mkdir -p build
+cd build
+qmake ../OpenRGB.pro
+make -j3
+```
 
-## Compile OpenRGB
+On the development machine, the installed translation compiler was Qt 6. The following qmake command was used instead:
 
-  * Instructions for compiling from source are [available here](Documentation/Compiling.md).
+```sh
+qmake ../OpenRGB.pro QT_TOOL.lrelease.binary=/usr/bin/lrelease6
+```
 
-## Setup Device Access
+This still builds the application against Qt 5. Use the ordinary qmake command when the Qt 5 translation tools are installed.
 
-  * After installing OpenRGB, please see the [SMBus Access](Documentation/SMBusAccess.md) and [USB Access](Documentation/USBAccess.md) pages for instructions on setting up access to your RGB devices.
+## Give your user hardware access
 
-## Join Our Discord
+Follow [OpenRGB's udev instructions](Documentation/UdevRules.md). For this self-compiled build:
 
-* https://discord.gg/AQwjJPY
+```sh
+sudo ./build/openrgb --generate-udev-rules /etc/udev/rules.d/60-openrgb.rules
+sudo udevadm control --reload-rules
+```
 
-## Follow Us On Mastodon
+Unplug/replug the keyboard afterward. Avoid having separate `60-openrgb.rules` files in both `/etc/udev/rules.d` and `/usr/lib/udev/rules.d`; a distribution package may already provide the latter.
 
-* https://floss.social/@OpenRGB
+## Enable the keyboard and set colors
 
-## Visit Our Lemmy Community
+Close other RGB applications and release the keyboard from any VirtualBox guest before using OpenRGB on the host.
 
-* https://lemmy.ml/c/OpenRGB
+```sh
+./build/openrgb --gui --noautoconnect
+```
 
-## How-Tos and FAQs
+1. Open **Settings → Supported Devices** and enable **Redragon K617 Fizz (experimental)**, then click **Save**. Restart or rescan devices to detect it.
+2. Select the keyboard and choose **Custom** mode.
+3. Click **Toggle LED View**.
+4. Click a key or drag-select a group. Hold **Ctrl** to add keys to the selection.
+5. Choose a color and click **Apply Colors To Selection**.
+6. Save an OpenRGB profile if you want to reuse the color layout.
 
-* [Windows Setup and Usage](https://gitlab.com/OpenRGBDevelopers/OpenRGB-Wiki/-/blob/stable/User-Documentation/OpenRGB-Windows-Setup-and-Usage.md)
-* [Frequently Asked Questions](https://gitlab.com/OpenRGBDevelopers/OpenRGB-Wiki/-/blob/stable/User-Documentation/Frequently-Asked-Questions.md)
+For a whole-keyboard color:
 
-## Support OpenRGB
+```sh
+./build/openrgb --noautoconnect --device 'Redragon K617 Fizz' --mode Static --color FF0000
+```
 
-* OpenRGB is a project I created to solve a problem I had with the RGB ecosystem.  My goal isn't to make money off of this project.  That said, people have requested to donate, and donations allow me to buy more RGB stuff to reverse engineer.
-* [Donate via PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=4VPTFMD3G4QVG&item_name=OpenRGB+Development&currency_code=USD&source=url)
-* [Become a Patron](https://www.patreon.com/CalcProgrammer1) (I'm not doing any Patreon-exclusive content, it's purely for donation)
-* Donate via Bitcoin: 1N83YPu7btXYadPS1neB9zX7X1QTdpyZQ
+The local setup also enables the existing **ASUS Aura Motherboard** and **Redragon M711 Cobra** detectors. These are upstream controllers, not new drivers in this fork. The detected hardware was an ASUS TUF GAMING A520M-PLUS II (`0b05:19af`) and an M711 Cobra (`04d9:fc30`); their lighting response has not been verified as part of this fork's testing. Enable motherboard lighting in BIOS if needed.
 
-## History of OpenRGB
+## Offline test
 
-* OpenRGB is a continuation of OpenAuraSDK, which itself was created out of reverse engineering work done on the Keyboard Visualizer project.  For a complete history of the RGB projects that led to OpenRGB's creation, see the [History page](https://gitlab.com/OpenRGBDevelopers/OpenRGB-Wiki/-/blob/stable/History-of-OpenRGB.md).
+The test uses mocked HID functions and does not access a physical keyboard. Run it from the repository root:
 
-## Contributing
+```sh
+g++ -std=c++17 -Wall -Wextra -Werror \
+    -IControllers/RedragonK617Controller -I/usr/include/hidapi \
+    tests/RedragonK617ControllerTest.cpp \
+    Controllers/RedragonK617Controller/RedragonK617Controller.cpp \
+    -o build/check-k617
+./build/check-k617
+```
 
-* Want to contribute support for a new device?  Check out the [RGBController API](Documentation/RGBControllerAPI.md) page for documentation of how OpenRGB implements device control.
-* Want to create a new OpenRGB SDK client implementation?  Check out the [OpenRGB SDK Documentation](Documentation/OpenRGBSDK.md) page for documentation of how the OpenRGB SDK network protocol functions.
-* Please read the [Contributing Guidelines](CONTRIBUTING.md) before starting work on your new changes.
+It checks exact static and six-key custom packets, ABNT-only key positions in the RGB planes, live-profile preservation, conservative detection, duplicate HID collections, invalid inputs and failed transfers. The HIDAPI include path may differ on other systems.
 
-## OpenRGB SDK
+The small fixtures under `tests/data/redragon-k617` contain the HID descriptor and lighting/configuration feature reports. They do not contain keyboard input reports. Full USB captures and personal OpenRGB settings are not included in this repository.
 
-* OpenRGB provides a network interface for controlling supported RGB devices from other software.  These projects implement the OpenRGB SDK and provide additional ways for you to control your lighting setup.
+## Protocol and limits
 
-  * [OpenRGB Python Client](https://github.com/jath03/openrgb-python) (by jath03)
-  * [OpenRGB Python Client (deprecated)](https://github.com/bahorn/OpenRGB-PyClient) (by bahorn)  
-  * [OpenRGB Node.js Client](https://github.com/vlakreeh/openrgb) (by vlakreeh)
-  * [D-Bus Connector for OpenRGB](https://github.com/Vinno97/OpenRGB-DBus-Connector) (by Vinno97)
-  * [OpenRGB.NET - C# OpenRGB Client](https://github.com/diogotr7/OpenRGB.NET) (by diogotr7)
-  * [OpenRGB-Client - Java Client](https://gitlab.com/mguimard/openrgb-client) (by morg)
-  * [OpenRGB-SDK - NodeJS client](https://www.npmjs.com/package/openrgb-sdk) (by Mola19)
-  * [OpenRGB-cppSDK - C++ client](https://github.com/Youda008/OpenRGB-cppSDK) (by Youda008)
-  * [openrgb-rs2 - Rust client](https://github.com/Achtuur/openrgb-rs2) (by nicoulaj & Achtuur)
+Custom colors use blue, green and red planes spaced 126 bytes apart in the `06 09 BC` feature report. The key indices come from the OEM CFG, with six named-key captures establishing the mapping. Each update reads and validates the live profile before changing its lighting-mode fields, preserving unrelated profile settings. Invalid responses abort the update.
 
-## Applications Supporting OpenRGB SDK
+Only Static and Custom are exposed. Built-in animations, brightness adjustment, Direct streaming and explicit save-to-device are not implemented. Existing brightness is preserved; a zero brightness setting can make a valid color update invisible. Persistence of OEM writes across unplugging remains unverified.
 
-* While OpenRGB itself only provides control over the lighting effects built into hardware, several open source applications can use the OpenRGB SDK to provide synchronized lighting effects for your devices.
+Custom reports reproduce the fixed tail observed in both captures rather than reading that tail from the live device. Effects on other OEM presets remain unverified. This controller is intended for occasional color configuration, not continuous software-driven animation.
 
-  * [Keyboard Visualizer](https://gitlab.com/CalcProgrammer1/KeyboardVisualizer) (by CalcProgrammer1)
-  * [OpenRGB E1.31 Receiver](https://gitlab.com/CalcProgrammer1/OpenRGBE131Receiver) (by me)
-  * [Aurora](https://github.com/Aurora-RGB/Aurora) (OpenRGB support added by diogotr7)
-  * [Artemis](https://github.com/Artemis-RGB/Artemis) (OpenRGB support added by diogotr7)
-  * [RemoteLight](https://github.com/Drumber/RemoteLight) (by Drumber, requires OpenRGB plugin)
-  * [OpenRGB-python-FX](https://github.com/herosilas12/OpenRGB-python-FX) (by herosilas12)
-  * [AllMyLights](https://github.com/sparten11740/allmylights) (by sparten11740)
-  * [OpenRGBRemote](https://gitlab.com/mguimard/openrgbremote) (by morg)
-  * [PiLED](https://github.com/PolisanTheEasyNick/PiLED) (by PolisanTheEasyNick)
+## License and upstream
 
-## OpenRGB Plugins
+The existing [GPL license](LICENSE), source license headers and dependency-specific licenses are retained. The new controller and test files use `GPL-2.0-or-later`. Original OpenRGB code and contributor attribution remain in the repository history.
 
-* OpenRGB provides a plugin interface for adding features to the OpenRGB application.  The following projects provide additional functionality in the form of plugins.
+This repository publishes the modified source. If distributing a compiled version, provide its complete corresponding source and build/install scripts under the applicable GPL terms.
 
-  * [OpenRGB Effects Plugin](https://gitlab.com/OpenRGBDevelopers/OpenRGBEffectsPlugin) (by herosilas12, morg)
-  * [OpenRGB Visual Map Plugin](https://gitlab.com/OpenRGBDevelopers/OpenRGBVisualMapPlugin) (by morg)
-  * [OpenRGB E1.31 Receiver Plugin](https://gitlab.com/OpenRGBDevelopers/OpenRGBE131ReceiverPlugin) (by CalcProgrammer1)
-  * [OpenRGB Scheduler Plugin](https://gitlab.com/OpenRGBDevelopers/OpenRGBSchedulerPlugin) (by morg)
-  * [OpenRGB Skin Plugin](https://gitlab.com/OpenRGBDevelopers/openrgbskinplugin) (by morg)
-  * [OpenRGB Hardware Sync Plugin](https://gitlab.com/OpenRGBDevelopers/OpenRGBHardwareSyncPlugin) (by morg)
-  * [OpenRGB Http Hook Plugin](https://gitlab.com/OpenRGBDevelopers/OpenRGBHttpHookPlugin) (by morg)
-  * [OpenRGB Razer Extras Plugin](https://gitlab.com/OpenRGBDevelopers/OpenRGBRazerExtrasPlugin) (by morg)
-  * [OpenRGB Fan Hardware Sync Plugin](https://gitlab.com/OpenRGBDevelopers/OpenRGBFanSyncPlugin) (by Shady)
-  * [OpenRGB Ambient Plugin](https://github.com/krojew/OpenRGB-Ambient) (by krojew)
-
-## Projects Used
-
-* OpenRGB directly relies upon these projects.
-  * PawnIO: https://pawnio.eu/
-  * libusb: https://github.com/libusb/libusb
-  * hidapi: https://github.com/libusb/hidapi
-  * libe131: https://github.com/hhromic/libe131
-  * NVFC: https://github.com/graphitemaster/NVFC
-  * Qt-Plus (ColorWheel): https://github.com/liuyanghejerry/Qt-Plus
-  * AMD ADL Libraries: https://github.com/GPUOpen-LibrariesAndSDKs/display-library
-  * hueplusplus: https://github.com/enwi/hueplusplus
-  * httplib: https://github.com/yhirose/cpp-httplib
-  * mdns: https://github.com/mjansson/mdns
-  * macUSPCIO: https://github.com/ShadyNawara/macUSPCIO
-
-## Projects Researched
-
-* While no code from these projects directly made its way into OpenRGB, these projects have been invaluable resources for protocol information.
-
-  * OpenRazer: https://github.com/openrazer/openrazer
-  * OpenRazer-Win32: https://github.com/CalcProgrammer1/openrazer-win32
-  * ckb-next: https://github.com/ckb-next/ckb-next
-  * linux_thermaltake_riing: https://github.com/chestm007/linux_thermaltake_riing
-  * Aura Addressable Header Controller: https://gitlab.com/cneil02/aura-addressable-header-controller
-  * OpenPyAURA: https://gitlab.com/thelastguardian/openpyaura
-  * AsrLed: https://github.com/EUA/AsrLed
-  * asrock-leds: https://github.com/RattyDAVE/asrock-leds
-  * hue-plus: https://github.com/kusti8/hue-plus
-  * rogauracore: https://github.com/wroberts/rogauracore
-  * msi-rgb: https://github.com/nagisa/msi-rgb
-  * OpenCorsairLink: https://github.com/audiohacked/OpenCorsairLink
-  * msi-keyboard: https://github.com/bparker06/msi-keyboard
-  * rivalcfg: https://github.com/flozz/rivalcfg
-  * VRMTool: https://github.com/rbrune/VRMtool
-  * g810-led: https://github.com/MatMoul/g810-led
-  * liquidctl: https://github.com/jonasmalacofilho/liquidctl
-  * kraken-unleashed: https://github.com/Cesarsk/kraken-unleashed
-  * Annemone: https://github.com/manualmanul/Annemone
-  * libcmmk: https://github.com/chmod222/libcmmk
-  * Signal RGB Plugins: https://gitlab.com/signalrgb/signal-plugins/-/tree/master/Plugins
-  * k550-macos: https://github.com/vookimedlo/ck550-macos/tree/master
-  * luxafor-python: https://github.com/vmitchell85/luxafor-python
-  * dreamcheekyusb: https://github.com/gbrayut/dreamcheekyusb
-  * omen-light: https://github.com/chiahsing/omen-light
-  
+- [Original OpenRGB repository](https://gitlab.com/CalcProgrammer1/OpenRGB)
+- [Original README](README.upstream.md)
+- [Related K617 support issue](https://gitlab.com/CalcProgrammer1/OpenRGB/-/issues/2172)
