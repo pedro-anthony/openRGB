@@ -11,6 +11,8 @@
 #include "DetectionManager.h"
 #include "LogManager.h"
 #include "RGBController_RedragonK617.h"
+#include "ResourceManager.h"
+#include "SettingsManager.h"
 
 DetectedControllers DetectRedragonK617(hid_device_info* info, const std::string& /*name*/)
 {
@@ -40,7 +42,13 @@ DetectedControllers DetectRedragonK617(hid_device_info* info, const std::string&
         return(detected_controllers);
     }
 
-    RedragonK617Controller* controller = new RedragonK617Controller(dev, info->path);
+    double blue_scale = 32.0 / 81.0;
+    json settings = ResourceManager::get()->GetSettingsManager()->GetSettings("RedragonK617Settings");
+    if(settings.contains("BlueScale") && settings["BlueScale"].is_number())
+    {
+        blue_scale = settings["BlueScale"].get<double>();
+    }
+    RedragonK617Controller* controller = new RedragonK617Controller(dev, info->path, blue_scale);
     detected_controllers.push_back(new RGBController_RedragonK617(controller));
     return(detected_controllers);
 }

@@ -83,6 +83,22 @@ For a whole-keyboard color:
 
 The local setup also enables the existing **ASUS Aura Motherboard** and **Redragon M711 Cobra** detectors. These are upstream controllers, not new drivers in this fork. The detected hardware was an ASUS TUF GAMING A520M-PLUS II (`0b05:19af`) and an M711 Cobra (`04d9:fc30`); their lighting response has not been verified as part of this fork's testing. Enable motherboard lighting in BIOS if needed.
 
+## Color calibration
+
+The K617 blue channel is scaled by `32/81` (about 0.395) in both Static and Custom modes. This comes from the owner's visual comparison: keyboard `00FF20` more closely matched mouse/motherboard `00FF51`, while `00FF00` was pure green. Selecting `00FF51` now sends `00FF20` to the keyboard; OpenRGB profiles retain the requested color.
+
+This is a starting estimate from one mixed color, not a measured calibration across the full color range. It also reduces pure-blue brightness and makes white warmer. Red and green are unchanged.
+
+To tune it, add this top-level section to `~/.config/OpenRGB/OpenRGB.json` while OpenRGB is closed, then restart:
+
+```json
+"RedragonK617Settings": {
+    "BlueScale": 0.3950617283950617
+}
+```
+
+Use a number from `0.0` to `1.0`: lower values reduce blue further, and `1.0` disables correction. Missing or invalid values use the starting estimate. This setting applies to all detected K617 keyboards.
+
 ## Offline test
 
 The test uses mocked HID functions and does not access a physical keyboard. Run it from the repository root:

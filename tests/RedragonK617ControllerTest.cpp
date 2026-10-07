@@ -13,6 +13,7 @@
 #include <cstring>
 #include <fstream>
 #include <iterator>
+#include <limits>
 #include <vector>
 #include "RedragonK617Controller.h"
 
@@ -95,7 +96,8 @@ int main()
     descriptor.push_back(0);
     assert(!RedragonK617Controller::MatchesDescriptor(dev));
 
-    RedragonK617Controller controller(dev, "offline");
+    /* Disable calibration when checking the original OEM capture bytes. */
+    RedragonK617Controller controller(dev, "offline", 1.0);
     std::vector<unsigned char> color = ReadFixture("static-red.bin");
     std::vector<unsigned char> mode  = ReadFixture("mode-static.bin");
     assert(color.size() == REDRAGON_K617_REPORT_SIZE);
@@ -222,4 +224,37 @@ int main()
     expected[8 + 96 + 252] = 0x65;
     assert(writes[1] == expected);
 
+    /* The observed match maps blue 81 to 32 in both lighting modes. */
+    RedragonK617Controller calibrated(dev, "offline");
+    writes.clear();
+    assert(calibrated.SetStaticColor(0, 255, 81));
+    assert(writes[1][29] == 0 && writes[1][30] == 255 && writes[1][31] == 32);
+    std::fill(rgb, rgb + sizeof(rgb), 0);
+    for(unsigned int i = 0; i < REDRAGON_K617_LED_COUNT; i++)
+    {
+        rgb[3 * i + 1] = 255;
+        rgb[3 * i + 2] = 81;
+    }
+    writes.clear();
+    assert(calibrated.SetKeyColors(rgb, REDRAGON_K617_LED_COUNT));
+    for(unsigned char index : RedragonK617Controller::key_indices)
+    {
+        assert(writes[1][8 + index] == 32);
+        assert(writes[1][8 + index + 126] == 255);
+        assert(writes[1][8 + index + 252] == 0);
+    }
+    const double scales[] = {0.0, 0.5, 1.0, -1.0, 2.0,
+                             std::numeric_limits<double>::quiet_NaN(),
+                             std::numeric_limits<double>::infinity()};
+    const unsigned char blues[] = {0, 128, 255, 101, 101, 101, 101};
+    for(unsigned int i = 0; i < sizeof(scales) / sizeof(scales[0]); i++)
+    {
+        RedragonK617Controller adjusted(dev, "offline", scales[i]);
+        writes.clear();
+        assert(adjusted.SetStaticColor(17, 255, 255));
+        assert(writes[1][29] == 17 && writes[1][30] == 255 && writes[1][31] == blues[i]);
+        writes.clear();
+        assert(adjusted.SetStaticColor(0, 255, 0));
+        assert(writes[1][31] == 0);
+    }
 }

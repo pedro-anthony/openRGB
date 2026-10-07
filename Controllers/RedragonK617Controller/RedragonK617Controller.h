@@ -20,7 +20,8 @@
 class RedragonK617Controller
 {
 public:
-    RedragonK617Controller(hid_device* dev_handle, const char* path);
+    // ponytail: one-color linear estimate; use measured curves if other mixes disagree.
+    RedragonK617Controller(hid_device* dev_handle, const char* path, double blue_scale = 32.0 / 81.0);
     ~RedragonK617Controller();
 
     static bool MatchesDevice(const hid_device_info* info);
@@ -36,4 +37,5 @@ private:
     hid_device* dev;
     std::string location;
     std::string last_error;
+    double blue_scale;
 };

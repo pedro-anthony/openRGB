@@ -9,6 +9,7 @@
 \*---------------------------------------------------------*/
 
 #include <chrono>
+#include <cmath>
 #include <cstring>
 #include <cstdio>
 #include <cwchar>
@@ -69,10 +70,12 @@ static const unsigned short static_color_mask[] =
     0x1DB, 0x1DD, 0x1DF, 0x1E0, 0x1E2, 0x1E4, 0x1E6, 0x1E7, 0x1E8, 0x1E9, 0x1EA,
 };
 
-RedragonK617Controller::RedragonK617Controller(hid_device* dev_handle, const char* path)
+RedragonK617Controller::RedragonK617Controller(hid_device* dev_handle, const char* path, double blue_scale)
 {
     dev      = dev_handle;
     location = path;
+    this->blue_scale = std::isfinite(blue_scale) && blue_scale >= 0.0 && blue_scale <= 1.0
+                     ? blue_scale : 32.0 / 81.0;
 }
 
 RedragonK617Controller::~RedragonK617Controller()
@@ -207,7 +210,7 @@ bool RedragonK617Controller::SetStaticColor(unsigned char red, unsigned char gre
 
     color[29] = red;
     color[30] = green;
-    color[31] = blue;
+    color[31] = static_cast<unsigned char>(std::lround(blue * blue_scale));
 
     return(ApplyColorReport(color, false));
 }
@@ -231,7 +234,7 @@ bool RedragonK617Controller::SetKeyColors(const unsigned char* rgb, unsigned int
     for(unsigned int i = 0; i < count; i++)
     {
         unsigned int offset = 8 + key_indices[i];
-        color[offset]       = rgb[3 * i + 2];
+        color[offset]       = static_cast<unsigned char>(std::lround(rgb[3 * i + 2] * blue_scale));
         color[offset + 126] = rgb[3 * i + 1];
         color[offset + 252] = rgb[3 * i];
     }
